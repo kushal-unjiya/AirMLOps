@@ -21,65 +21,37 @@ logger = logging.getLogger(__name__)
 
 class FeaturePipeline:
     """Handles the feature pipeline for processing current air quality data."""
-
-    def __init__(self, config_path: str = "src/config/config.json"):
-        """Initialize the feature pipeline with configuration."""
-        self.load_config(config_path)
-        self.fetcher = AQIDataFetcher(self.config['api_key'])
-        self.processor = AQIDataProcessor()
-        self.data_loader = DataLoader()
-
-    def load_config(self, config_path: str) -> None:
-        """Load configuration from JSON file."""
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.json')
+        self.load_config(self.config_path)
+        self.fetcher = AQIDataFetcher(api_key)
+    
+    def load_config(self, config_path):
         try:
             with open(config_path, 'r') as f:
                 self.config = json.load(f)
-        except Exception as e:
-            logger.error(f"Failed to load config: {str(e)}")
+        except FileNotFoundError as e:
+            logging.error(f"Failed to load config: {e}")
             raise
 
     def run_pipeline(self, cities: Optional[list] = None) -> None:
-        """
-        Run the feature pipeline for specified cities.
+            """
+            Run the feature pipeline for specified cities.
 
-        Args:
-            cities: Optional list of cities to process. If None, uses cities from config.
-        """
-        cities = cities or self.config.get('cities', ['beijing'])
-        timestamp = datetime.now()
-
-        for city in cities:
-            try:
-                logger.info(f"Processing data for {city}")
-
-                # Fetch current data
-                raw_data = self.fetcher.get_current_data(city)
-
-                if not raw_data or raw_data.get('status') != 'ok':
-                    logger.error(f"Failed to fetch data for {city}: {raw_data.get('status', 'No response')}")
-                    continue
-
-                # Process data
-                processed_df = self.processor.process_data(raw_data['data'])
-
-                if processed_df.empty:
-                    logger.warning(f"No processable data for {city}")
-                    continue
-
-                # Add metadata
-                processed_df['city'] = city
-                processed_df['timestamp'] = timestamp
-                processed_df['aqi'] = processed_df.apply(self.processor.calculate_aqi, axis=1)
-
-                # Save both raw and processed data
-                self.data_loader.save_raw_data(raw_data, city, timestamp)
-                self.processor.save_features(processed_df)
-
-                logger.info(f"Successfully processed data for {city}")
-
-            except Exception as e:
-                logger.error(f"Error processing {city}: {str(e)}")
-                continue
+            Args:
+                cities: Optional list of cities to process. If None, uses cities from config.
+            """
+            if cities is None:
+                cities = self.config.get('cities', [])
+            
+            for city in cities:
+                try:
+                    logger.info(f"Processing data for {city}")
+                    data = self.fetcher.fetch_data(city)  # Use the fetcher attribute
+                    # Process the data...
+                except Exception as e:
+                    logger.error(f"Error processing {city}: {e}")
 
 def main():
     """Main function to run the feature pipeline."""

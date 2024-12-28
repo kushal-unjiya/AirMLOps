@@ -5,7 +5,9 @@ import pandas as pd
 import json
 from datetime import datetime
 import plotly.graph_objects as go
-
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.utils.data_fetcher import AQIDataFetcher
 from src.utils.data_processor import AQIDataProcessor
 from src.pipelines.feature_pipeline import FeaturePipeline
