@@ -53,14 +53,13 @@ class FeaturePipeline:
                 except Exception as e:
                     logger.error(f"Error processing {city}: {e}")
 
-def main():
-    """Main function to run the feature pipeline."""
-    try:
-        pipeline = FeaturePipeline()
-        pipeline.run_pipeline()
-    except Exception as e:
-        logger.error(f"Pipeline failed: {str(e)}")
-        sys.exit(1)
-
 if __name__ == "__main__":
-    main()
+    try:
+        api_key = os.environ.get("OPENWEATHERMAP_API_KEY")
+        if not api_key:
+            raise ValueError("API key not provided in environment variables.")
+        
+        feature_pipeline = FeaturePipeline(api_key)
+        feature_pipeline.run_pipeline()
+    except Exception as e:
+        logger.error(f"Pipeline failed: {e}")

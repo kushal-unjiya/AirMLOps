@@ -1,5 +1,5 @@
 {
-  "api_key": "a402865b1ffbe07d629bbe4d023b4364",
+    "api_key": "2e99da895dff515a42a0450dde886007",
     "default_city": "London",
     "cities": ["London", "Beijing", "New York", "Mumbai"],
     "model_path": "models/model.joblib",
