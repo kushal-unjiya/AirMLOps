@@ -48,43 +48,42 @@ def main():
     if st.button("Get Prediction"):
         try:
             # Fetch and process data
-            processed_data = feature_pipeline.run_pipeline(city_name)
-            if processed_data is None or processed_data.empty:
-                st.error(f"Could not retrieve or process data for {city_name}. Please check the city name and API availability.")
+            processed_data = feature_pipeline.run_pipeline[(city_name)]
+            if processed_data.empty:
+                st.error(f"Could not retrieve or process data for {[city_name]}. Please check the city name and API availability.")
                 return
 
-            processed_data['month'] = pd.to_datetime(processed_data['date']).dt.month
-            processed_data['day'] = pd.to_datetime(processed_data['date']).dt.day
-            processed_data['year'] = pd.to_datetime(processed_data['date']).dt.year
-            processed_data = processed_data.drop('date', axis=1)
+            # processed_data['month'] = pd.to_datetime(processed_data['date']).dt.month
+            # processed_data['day'] = pd.to_datetime(processed_data['date']).dt.day
+            # processed_data['year'] = pd.to_datetime(processed_data['date']).dt.year
+            # processed_data = processed_data.drop('date', axis=1)
 
             # Make predictions
-            if model is not None:
-                prediction = model.predict(processed_data)[0]
+            # if model is not None:
+            prediction = model.predict(processed_data)
 
-                st.subheader(f"Predicted AQI for {city_name}")
-                st.metric("Predicted AQI", f"{prediction:.2f}")
+            st.subheader(f"Predicted AQI for {[city_name]}")
+            st.metric("Predicted AQI", f"{prediction:.2f}")
 
-                # Pollutant levels visualization
-                st.subheader("Processed Pollutant Levels")
-                fig = go.Figure()
-                pollutants = ['pm25', 'pm10', 'o3', 'no2', 'so2', 'co']
-                values = [processed_data.iloc[0][p] for p in pollutants]
+            # Pollutant levels visualization
+            st.subheader("Processed Pollutant Levels")
+            fig = go.Figure()
+            pollutants = ['pm2_5', 'pm10', 'o3', 'no2', 'so2', 'co']
+            values = [processed_data.iloc[0][p] for p in pollutants]
 
-                fig.add_trace(go.Bar(
-                    x=pollutants,
-                    y=values,
-                    text=values,
-                    textposition='auto',
-                ))
+            fig.add_trace(go.Bar(
+                x=pollutants,
+                y=values,
+                text=values,
+                textposition='auto',
+            ))
 
-                fig.update_layout(
-                    title="Pollutant Concentrations",
-                    xaxis_title="Pollutant",
-                    yaxis_title="Concentration"
-                )
-
-                st.plotly_chart(fig)
+            fig.update_layout(
+                title="Pollutant Concentrations",
+                xaxis_title="Pollutant",
+                yaxis_title="Concentration"
+            )
+            st.plotly_chart(fig)
 
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")

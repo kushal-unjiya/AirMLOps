@@ -1,10 +1,14 @@
+# /backfill_pipeline.py
+
 import os
 import time
 import json
 import logging
+import sys
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import Optional, List
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.utils.data_fetcher import AQIDataFetcher
 from src.utils.data_processor import AQIDataProcessor
@@ -69,8 +73,9 @@ class HistoricalDataBackfill:
                             # Save processed data to historical folder
                             year = current_date.year
                             month = current_date.month
-                            os.makedirs(f"data/historical/{year}/{month:02}", exist_ok=True)
-                            filepath = f"data/historical/{year}/{month:02}/features.csv"
+                            city_dir = f"data/historical/{city}/{year}/{month:02}"
+                            os.makedirs(city_dir, exist_ok=True)
+                            filepath = os.path.join(city_dir,"features.csv")
 
                             # Append or create the historical file
                             if os.path.exists(filepath):
@@ -96,12 +101,12 @@ class HistoricalDataBackfill:
                     logger.error(f"Error processing data for {city} on {date_str}: {str(e)}")
 
                 current_date += timedelta(days=1)
-                time.sleep(1)  # Avoid overwhelming the API
+                time.sleep(0.2)  # Avoid overwhelming the API
 
     def main(self):
         """Main function to initiate the backfill process."""
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=730)  # Default to last 2 years
+        start_date = end_date - timedelta(days=5)  # Default to last 2 years
 
         self.backfill_data(start_date, end_date)
 

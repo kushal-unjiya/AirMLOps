@@ -90,7 +90,7 @@ class TestFeaturePipeline(unittest.TestCase):
 # ------------------ Additional Tests for AQIDataProcessor ------------------ #
 
 @pytest.mark.parametrize("sample_data,expected_aqi", [
-    ({"pm25": 25.0, "pm10": 50.0, "o3": 30.0, "no2": 40.0, "so2": 20.0, "co": 1.0}, True)
+    ({"pm2_5": 25.0, "pm10": 50.0, "o3": 30.0, "no2": 40.0, "so2": 20.0, "co": 1.0}, True)
 ])
 def test_aqi_calculation(sample_data, expected_aqi):
     processor = AQIDataProcessor()
@@ -103,7 +103,7 @@ def test_process_raw_data():
     processor = AQIDataProcessor()
     raw_data = {
         'iaqi': {
-            'pm25': {'v': 25.0},
+            'pm2_5': {'v': 25.0},
             'pm10': {'v': 50.0},
             'o3': {'v': 30.0},
             'no2': {'v': 40.0},
@@ -115,7 +115,7 @@ def test_process_raw_data():
     df = processor.process_raw_data(raw_data)
     assert isinstance(df, pd.DataFrame)
     assert not df.empty
-    assert 'pm25' in df.columns
+    assert 'pm2_5' in df.columns
     assert 'hour' in df.columns
 
 # ------------------ Main Test Execution ------------------ #

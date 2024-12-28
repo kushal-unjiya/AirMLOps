@@ -1,3 +1,4 @@
+# data_fetcher.py
 import requests
 import json
 import pandas as pd
@@ -22,6 +23,14 @@ class AQIDataFetcher:
         """
         self.api_key = api_key
         self.base_url = "http://api.openweathermap.org/data/2.5/air_pollution"
+        
+        self.city_coordinates = {
+            "London": {"lat": 51.5074, "lon": -0.1278},
+            "Beijing": {"lat": 39.9042, "lon": 116.4074},
+            "New York": {"lat": 40.7128, "lon": -74.0060},
+            "Mumbai": {"lat": 19.0760, "lon": 72.8777},
+        }
+        
 
     def _make_request(self, params: dict) -> dict:
         """
@@ -41,20 +50,24 @@ class AQIDataFetcher:
             logger.error(f"API request failed: {str(e)}")
             return None
 
-    def get_current_data(self, lat: float, lon: float) -> dict:
+    def get_current_data(self, city:str) -> dict:
         """
-        Fetch current air quality data for a specific location.
+        Fetch current air quality data for a city.
 
         Args:
-            lat: Latitude of the location
-            lon: Longitude of the location
+            city: Name of the city
 
         Returns:
-            Dictionary containing current air quality data or None if an error occurs
+            Dictionary containing current air quality data
         """
+        if city not in self.city_coordinates:
+            logger.error(f"City {city} not found in city coordinates.")
+            return None
+        
+        coords = self.city_coordinates[city]
         params = {
-            "lat": lat,
-            "lon": lon,
+            "lat": coords["lat"],
+            "lon": coords["lon"],
             "appid": self.api_key
         }
         return self._make_request(params)

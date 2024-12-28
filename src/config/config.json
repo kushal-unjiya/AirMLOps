@@ -4,6 +4,7 @@
     "cities": ["London", "Beijing", "New York", "Mumbai"],
     "model_path": "models/model.joblib",
     "feature_data_path": "data/features/",
+    "data_path": "data/raw/",
     "historical_data_path": "data/historical/",
     "refresh_rate_hours": 1,
     "training_schedule": "weekly"

@@ -1,3 +1,4 @@
+# data_processor.py
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -13,11 +14,11 @@ class AQIDataProcessor:
         Initialize the data processor with default parameters.
         """
         self.required_columns = [
-            'pm25', 'pm10', 'o3', 'no2', 'so2', 'co',
-            'temperature', 'pressure', 'humidity'
+            'pm2_5', 'pm10', 'o3', 'no2', 'so2', 'co',
+            'temperature', 'pressure', 'humidity','AQI', 'date'
         ]
 
-    def process_raw_data(self, data: dict) -> pd.DataFrame:
+    def process_data(self, data: dict) -> pd.DataFrame:
         """
         Process raw API response data into a structured format.
 
@@ -33,7 +34,18 @@ class AQIDataProcessor:
         df = pd.DataFrame(data["list"])
         df["date"] = pd.to_datetime(df["dt"], unit="s")
         df["AQI"] = df["main"].apply(lambda x: x.get("aqi"))
-        df = df.select_dtypes(include=[np.number])
+        df["pm2_5"] = df["components"].apply(lambda x: x.get("pm2_5"))
+        df["pm10"] = df["components"].apply(lambda x: x.get("pm10"))
+        df["o3"] = df["components"].apply(lambda x: x.get("o3"))
+        df["no2"] = df["components"].apply(lambda x: x.get("no2"))
+        df["so2"] = df["components"].apply(lambda x: x.get("so2"))
+        df["co"] = df["components"].apply(lambda x: x.get("co"))
+        df["temperature"] = df["main"].apply(lambda x: x.get("temp"))
+        df["pressure"] = df["main"].apply(lambda x: x.get("pressure"))
+        df["humidity"] = df["main"].apply(lambda x: x.get("humidity"))
+
+        # Select only the required columns
+        df = df[self.required_columns]
         return df
 
     def calculate_aqi(self, row: pd.Series) -> float:
@@ -47,7 +59,7 @@ class AQIDataProcessor:
             Calculated AQI value
         """
         weights = {
-            'pm25': 0.3,
+            'pm2_5': 0.3,
             'pm10': 0.2,
             'o3': 0.2,
             'no2': 0.1,

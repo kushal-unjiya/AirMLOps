@@ -1,3 +1,4 @@
+# feature_pipeline.py
 import logging
 import sys
 import os
@@ -26,6 +27,8 @@ class FeaturePipeline:
         self.config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.json')
         self.load_config(self.config_path)
         self.fetcher = AQIDataFetcher(api_key)
+        self.processor = AQIDataProcessor()
+        self.loader = DataLoader()
     
     def load_config(self, config_path):
         try:
@@ -44,14 +47,27 @@ class FeaturePipeline:
             """
             if cities is None:
                 cities = self.config.get('cities', [])
+                
+            all_data = pd.DataFrame()
             
             for city in cities:
                 try:
                     logger.info(f"Processing data for {city}")
-                    data = self.fetcher.get_current_data(city)  # Use the fetcher attribute
-                    # Process the data...
+                    raw_data = self.fetcher.get_current_data(city)  # Use the fetcher attribute
+                    
+                    if raw_data:
+                        processed_data = self.processor.process_data(raw_data)
+                        if not processed_data.empty:
+                            processed_data['city'] = city
+                            all_data = pd.concat([all_data, processed_data], ignore_index=True)
+                            
+                            self.loader.save_raw_data(raw_data, city,datetime.now())
+                            
                 except Exception as e:
                     logger.error(f"Error processing {city}: {e}")
+                    continue  
+            
+            return all_data
 
 if __name__ == "__main__":
     try:

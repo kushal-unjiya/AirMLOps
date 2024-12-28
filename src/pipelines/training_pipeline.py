@@ -1,3 +1,4 @@
+    # /training_pipeline.py
 import logging
 import sys
 import os
@@ -31,10 +32,11 @@ class TrainingPipeline:
     def __init__(self, config_path: str = "src/config/config.json"):
         """Initialize the training pipeline with configuration."""
         self.load_config(config_path)
-        self.data_loader = DataLoader(self.config['data_path'])
+        self.data_loader = DataLoader()
         self.processor = AQIDataProcessor()
         self.model_path = self.config.get('model_path', 'models/model.joblib')
-        self.metrics_path = self.config.get('metrics_path', 'models/metrics.json')
+        self.metrics_path = os.path.join(os.path.dirname(self.model_path), 'metrics.json')
+        self.required_columns = ['pm2_5', 'pm10', 'o3', 'no2', 'so2', 'co', 'AQI']
 
     def load_config(self, config_path: str) -> None:
         """Load configuration from JSON file."""
@@ -44,8 +46,45 @@ class TrainingPipeline:
         except Exception as e:
             logger.error(f"Failed to load config: {str(e)}")
             raise
-
-    def prepare_features(self, df: pd.DataFrame) -> tuple:
+    
+    def load_history_data(self, city: str) -> pd.DataFrame:
+        """Load and combine all historical data."""
+        all_data = []
+        history_dir = os.path.join("data", "historical", city)  
+        
+        try:
+            for year in os.listdir(history_dir):
+                year_dir = os.path.join(history_dir, year)
+                if os.path.isdir(year_dir):
+                    for month in os.listdir(year_dir):
+                        month_dir = os.path.join(year_dir, month)
+                        if os.path.isdir(month_dir):
+                            features_path = os.path.join(month_dir, "features.csv")
+                            if os.path.exists(features_path):
+                                logger.info(f"Loading data from {features_path}")
+                                try:
+                                    df = pd.read_csv(features_path)
+                                    if not df.empty:
+                                        missing_columns = [col for col in self.required_columns if col not in df.columns]
+                                        if missing_columns:
+                                            logger.error(f"Missing columns in data: {missing_columns}")
+                                            for col in missing_columns:
+                                                df[col] = None
+                                        all_data.append(df)
+                                except Exception as e:
+                                    logger.error(f"Error loading data: {str(e)}")
+            if not all_data:
+                logger.error("No historical data found.")
+                return pd.DataFrame()
+            
+            combined_data = pd.concat(all_data, ignore_index=True)
+            logger.info(f"Loaded {len(combined_data)} total records from historical data.")
+            return combined_data
+        except Exception as e:
+            logger.error(f"Error loading historical data: {str(e)}")
+            return pd.DataFrame()
+            
+    def prepare_features(self, df: pd.DataFrame) -> list:
         """
         Prepare features and target variable for model training.
 
@@ -56,15 +95,24 @@ class TrainingPipeline:
             tuple: Feature matrix (X) and target vector (y).
         """
         try:
-            df = self.processor.add_datetime_features(df, date_column='date')
-            target_col = self.config.get('target_column', 'AQI')
-
-            if target_col not in df.columns:
-                raise ValueError(f"Target column '{target_col}' not found in data.")
-
-            feature_cols = [col for col in df.columns if col != target_col and col != 'date']
-
-            return df[feature_cols], df[target_col]
+            features_column = ['pm2_5', 'pm10', 'o3', 'no2', 'so2', 'co']
+            target_column = 'AQI'
+            
+            missing_columns = [col for col in features_column + [target_column] if col not in df.columns]
+            
+            if missing_columns:
+                raise ValueError(f"Missing columns in data: {missing_columns}")
+                        
+            X = df[features_column]
+            y = df[target_column]
+            
+            X = X.fillna(X.mean())
+            y = y.fillna(y.mean())
+            
+            logger.info(f"Prepared {len(X)} samples with {len(features_column)} features.")
+            return X, y
+            
+                        
         except Exception as e:
             logger.error(f"Error preparing features: {str(e)}")
             raise
@@ -82,9 +130,7 @@ class TrainingPipeline:
             X, y = self.prepare_features(df)
 
             # Split data into training and testing sets
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=self.config.get('test_size', 0.2), random_state=42
-            )
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=self.config.get('test_size', 0.2), random_state=42)
 
             # Train the model
             model = RandomForestRegressor(
@@ -122,9 +168,19 @@ class TrainingPipeline:
 
 def main():
     """Main function to run the training pipeline."""
+    cities = ["London", "Beijing", "New York", "Mumbai"]  # List of cities to process
+
     try:
-        trainer = TrainingPipeline()
-        trainer.train_model()
+        pipeline = TrainingPipeline()
+        for city in cities:
+            logger.info(f"Loading historical data for {city}")
+            data = pipeline.load_history_data(city)
+            if data.empty:
+                logger.warning(f"No data found for {city}")
+            else:
+                # Further processing for each city's data
+                logger.info(f"Processing data for {city}")
+                # Add your data processing code here
     except Exception as e:
         logger.error(f"Pipeline execution failed: {str(e)}")
         sys.exit(1)
