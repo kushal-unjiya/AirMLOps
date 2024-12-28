@@ -48,7 +48,7 @@ class FeaturePipeline:
             for city in cities:
                 try:
                     logger.info(f"Processing data for {city}")
-                    data = self.fetcher.fetch_data(city)  # Use the fetcher attribute
+                    data = self.fetcher.get_current_data(city)  # Use the fetcher attribute
                     # Process the data...
                 except Exception as e:
                     logger.error(f"Error processing {city}: {e}")
